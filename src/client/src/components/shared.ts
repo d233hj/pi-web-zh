@@ -61,8 +61,15 @@ export const appStyles = css`
   aside { display: flex; flex-direction: column; min-height: 0; border-right: 1px solid var(--pi-border); overflow: hidden; }
   header { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px; border-bottom: 1px solid var(--pi-border); }
   .header-actions { display: flex; align-items: center; gap: 8px; }
-  project-list, workspace-list { flex: 0 0 auto; max-height: 26%; overflow: auto; border-bottom: 1px solid var(--pi-border-muted); }
-  session-list { flex: 1 1 auto; min-height: 0; overflow: auto; }
+  project-list { flex: 0 0 auto; max-height: var(--pi-nav-project-h, 26%); min-height: 48px; overflow: auto; border-bottom: 1px solid var(--pi-border-muted); }
+  workspace-list { flex: 0 0 auto; max-height: var(--pi-nav-workspace-h, 26%); min-height: 48px; overflow: auto; border-bottom: 1px solid var(--pi-border-muted); }
+  session-list { flex: 1 1 auto; min-height: 80px; overflow: auto; }
+  .nav-splitter { flex: 0 0 auto; height: 3px; min-height: 3px; background: var(--pi-border-muted); cursor: row-resize; user-select: none; -webkit-user-select: none; transition: background .15s; position: relative; z-index: 5; }
+  .nav-splitter::after { content: ""; position: absolute; inset: -4px 0; }
+  .nav-splitter:hover, .nav-splitter.active { background: var(--pi-accent); }
+  aside.resizing-nav { cursor: row-resize; user-select: none; -webkit-user-select: none; }
+  aside.resizing-nav > * { pointer-events: none; }
+  aside.resizing-nav .nav-splitter { pointer-events: auto; }
   main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
   .context-bar { position: relative; flex: 0 0 auto; min-width: 0; display: none; align-items: center; gap: 0; padding: 6px 0; border-bottom: 1px solid var(--pi-border-muted); background: var(--pi-bg); }
   .context-bar::before, .context-bar::after { content: ""; position: absolute; top: 0; bottom: 0; z-index: 2; width: 20px; opacity: 0; pointer-events: none; transition: opacity .15s ease; }

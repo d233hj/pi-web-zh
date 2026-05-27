@@ -126,6 +126,12 @@ export class PiWebApp extends LitElement {
   private dragStartWidth = 0;
   private readonly onSplitterMove = (e: MouseEvent) => this.handleSplitterMove(e);
   private readonly onSplitterUp = () => this.handleSplitterUp();
+  // Nav sidebar splitters
+  private draggingNavSplitter: "pw" | "ws" | null = null;
+  private navDragStartY = 0;
+  private navDragStartPct = 0;
+  private readonly onNavSplitterMove = (e: MouseEvent) => this.handleNavSplitterMove(e);
+  private readonly onNavSplitterUp = () => this.handleNavSplitterUp();
   @state() private activeThemeId: QualifiedContributionId = CLASSIC_THEME_ID;
   @state() private isMobileNavigationLayout = this.mobileNavigationMedia?.matches ?? false;
   @state() private isPwaDisplayMode = detectPwaDisplayMode(this.pwaDisplayModeMedia);
@@ -550,6 +556,7 @@ export class PiWebApp extends LitElement {
         })}
         .onClose=${(project: Project) => this.projects.closeProject(project.id)}
       ></project-list>
+      <div class="nav-splitter" @mousedown=${(e: MouseEvent) => this.onNavSplitterDown(e, "pw")}></div>
       <workspace-list
         .workspaces=${this.state.workspaces}
         .selected=${this.state.selectedWorkspace}
@@ -565,6 +572,7 @@ export class PiWebApp extends LitElement {
         })}
         .onDelete=${(workspace: Workspace) => { void this.deleteWorkspace(workspace); }}
       ></workspace-list>
+      <div class="nav-splitter" @mousedown=${(e: MouseEvent) => this.onNavSplitterDown(e, "ws")}></div>
       <session-list
         .sessions=${this.state.sessions}
         .statuses=${this.state.sessionStatuses}
@@ -1258,6 +1266,43 @@ export class PiWebApp extends LitElement {
       );
     }
     this.draggingSplitter = null;
+  }
+
+  // ── Nav sidebar splitters ──
+
+  private onNavSplitterDown(e: MouseEvent, which: "pw" | "ws"): void {
+    e.preventDefault();
+    const aside = this.renderRoot.querySelector("aside");
+    if (!aside) return;
+    this.draggingNavSplitter = which;
+    this.navDragStartY = e.clientY;
+    const prop = which === "pw" ? "--pi-nav-project-h" : "--pi-nav-workspace-h";
+    const current = aside instanceof HTMLElement ? aside.style.getPropertyValue(prop) : "";
+    this.navDragStartPct = current ? parseFloat(current) : 26;
+    aside.classList.add("resizing-nav");
+    document.addEventListener("mousemove", this.onNavSplitterMove);
+    document.addEventListener("mouseup", this.onNavSplitterUp);
+  }
+
+  private handleNavSplitterMove(e: MouseEvent): void {
+    if (!this.draggingNavSplitter) return;
+    const aside = this.renderRoot.querySelector("aside");
+    if (!(aside instanceof HTMLElement)) return;
+    const rect = aside.getBoundingClientRect();
+    const totalH = rect.height;
+    if (totalH <= 0) return;
+    const deltaPct = ((e.clientY - this.navDragStartY) / totalH) * 100;
+    const newPct = Math.max(5, Math.min(50, this.navDragStartPct + deltaPct));
+    const prop = this.draggingNavSplitter === "pw" ? "--pi-nav-project-h" : "--pi-nav-workspace-h";
+    aside.style.setProperty(prop, `${newPct}%`);
+  }
+
+  private handleNavSplitterUp(): void {
+    document.removeEventListener("mousemove", this.onNavSplitterMove);
+    document.removeEventListener("mouseup", this.onNavSplitterUp);
+    const aside = this.renderRoot.querySelector("aside");
+    if (aside instanceof HTMLElement) aside.classList.remove("resizing-nav");
+    this.draggingNavSplitter = null;
   }
 
   override render() {
