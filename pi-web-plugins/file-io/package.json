@@ -1,0 +1,9 @@
+{
+  "name": "@pi-web/file-io-plugin",
+  "private": true,
+  "piWeb": {
+    "plugins": [
+      { "id": "file-io", "module": "pi-web-plugin.js" }
+    ]
+  }
+}

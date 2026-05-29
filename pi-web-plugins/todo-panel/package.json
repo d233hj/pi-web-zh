@@ -1,0 +1,9 @@
+{
+  "name": "@pi-web/todo-panel-plugin",
+  "private": true,
+  "piWeb": {
+    "plugins": [
+      { "id": "todo-panel", "module": "pi-web-plugin.js" }
+    ]
+  }
+}

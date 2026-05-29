@@ -107,6 +107,12 @@ export const appStyles = css`
   .mobile-tabs button.selected { border-color: var(--pi-accent); background: var(--pi-selection-bg); }
   .tab-badge { display: inline-block; min-width: 14px; margin-left: 4px; border: 1px solid var(--pi-success-border); border-radius: 999px; background: var(--pi-success-surface); color: var(--pi-success); padding: 0 5px; font-size: 11px; line-height: 16px; text-align: center; }
   workspace-panel { min-width: 0; min-height: 0; border-left: 1px solid var(--pi-border); overflow: hidden; }
+  .panel-stack { display: flex; flex-direction: column; min-width: 0; min-height: 0; border-left: 1px solid var(--pi-border); overflow: hidden; }
+  .panel-stack > .panel-top { flex: 0 0 calc(var(--pi-panel-top-ratio, 0.33) * 100%); min-height: 0; overflow: hidden; }
+  .panel-stack > .panel-bottom { flex: 1 1 0%; min-height: 0; overflow: hidden; }
+  .panel-v-splitter { flex: 0 0 auto; height: 4px; min-height: 4px; background: var(--pi-border-muted); cursor: row-resize; user-select: none; -webkit-user-select: none; transition: background .15s; position: relative; z-index: 10; }
+  .panel-v-splitter::after { content: ""; position: absolute; inset: -4px 0; }
+  .panel-v-splitter:hover { background: var(--pi-accent); }
   @media (max-width: 1180px) {
     .shell { grid-template-columns: var(--pi-nav-width, 260px) 4px minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
     .grid-splitter-panel { display: none; }
@@ -114,8 +120,8 @@ export const appStyles = css`
     main { grid-column: 2; grid-row: 1 / 3; }
     .mobile-tabs-frame { display: flex; }
     .shell.workspace-view main { grid-row: 1; min-height: auto; }
-    .shell.workspace-view > workspace-panel { grid-column: 2; grid-row: 2; display: flex; border-left: 0; }
-    .shell:not(.workspace-view) > workspace-panel { display: none; }
+    .shell.workspace-view > workspace-panel, .shell.workspace-view > .panel-stack { grid-column: 2; grid-row: 2; display: flex; border-left: 0; }
+    .shell:not(.workspace-view) > workspace-panel, .shell:not(.workspace-view) > .panel-stack { display: none; }
     main.workspace-view chat-view, main.workspace-view prompt-editor, main.workspace-view status-bar,
     main.workspace-view .empty { display: none; }
     main.workspace-view { overflow: hidden; }
@@ -124,7 +130,7 @@ export const appStyles = css`
     .shell { grid-template-columns: minmax(0, 1fr); }
     .grid-splitter { display: none; }
     aside { display: none; }
-    main, .shell.workspace-view > workspace-panel { grid-column: 1; }
+    main, .shell.workspace-view > workspace-panel, .shell.workspace-view > .panel-stack { grid-column: 1; }
     .context-bar { display: flex; }
     .mobile-navigation-tab { display: block; }
     main.navigation-view chat-view, main.navigation-view prompt-editor, main.navigation-view status-bar,

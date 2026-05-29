@@ -124,6 +124,13 @@ export class PiWebApp extends LitElement {
   private draggingSplitter: "nav" | "panel" | null = null;
   private dragStartX = 0;
   private dragStartWidth = 0;
+  // Vertical panel splitters (top/bottom)
+  private draggingVSplitter: "panel-v" | null = null;
+  private vDragStartY = 0;
+  private vDragStartRatio = 0.33;
+  @state() private panelTopRatio = this.loadPanelTopRatio();
+  private readonly onVSplitterMove = (e: MouseEvent) => this.handleVSplitterMove(e);
+  private readonly onVSplitterUp = () => this.handleVSplitterUp();
   private readonly onSplitterMove = (e: MouseEvent) => this.handleSplitterMove(e);
   private readonly onSplitterUp = () => this.handleSplitterUp();
   // Nav sidebar splitters
@@ -520,12 +527,33 @@ export class PiWebApp extends LitElement {
     if (tool === "core:workspace.git") void this.git.refreshGit();
   }
 
-  private renderWorkspacePanel() {
+  private renderWorkspacePanel(excludeIds?: string[]) {
     const workspace = this.state.selectedWorkspace;
     const panelContext = workspace === undefined ? undefined : this.createWorkspacePanelContext(workspace);
     const workspaceLabelItems = workspace === undefined ? [] : this.plugins.getWorkspaceLabelItems(this.state, workspace);
     const emptyState = workspace === undefined ? this.workspacePanelEmptyState() : undefined;
-    return html`<workspace-panel .workspace=${workspace} .panelContext=${panelContext} .emptyState=${emptyState} .tool=${this.state.workspaceTool} .panels=${this.visibleWorkspacePanels()} .workspaceLabelItems=${workspaceLabelItems} .onSelectTool=${(tool: QualifiedContributionId) => { this.openWorkspaceTool(tool); }}></workspace-panel>`;
+    const allPanels = this.visibleWorkspacePanels();
+    const panels = excludeIds ? allPanels.filter(p => !excludeIds.includes(p.id)) : allPanels;
+    return html`<workspace-panel .workspace=${workspace} .panelContext=${panelContext} .emptyState=${emptyState} .tool=${this.state.workspaceTool} .panels=${panels} .workspaceLabelItems=${workspaceLabelItems} .onSelectTool=${(tool: QualifiedContributionId) => { this.openWorkspaceTool(tool); }}></workspace-panel>`;
+  }
+
+  private renderPanelStack() {
+    const allPanels = this.visibleWorkspacePanels();
+    const isGuard = (p: any) => p.localId === "guard-panel.main" || p.id.endsWith(":guard-panel.main");
+    if (!allPanels.some(p => isGuard(p))) return this.renderWorkspacePanel();
+    const nonGuardIds = allPanels.filter(p => !isGuard(p)).map(p => p.id);
+    const guardIds = allPanels.filter(p => isGuard(p)).map(p => p.id);
+    return html`
+      <div class="panel-stack" style="--pi-panel-top-ratio:${this.panelTopRatio};">
+        <div class="panel-top">
+          ${this.renderWorkspacePanel(nonGuardIds)}
+        </div>
+        <div class="panel-v-splitter" @mousedown=${(e: MouseEvent) => this.onVSplitterDown(e)}></div>
+        <div class="panel-bottom">
+          ${this.renderWorkspacePanel(guardIds)}
+        </div>
+      </div>
+    `;
   }
 
   private renderNavigationPanel(autoSwitchToChat: boolean) {
@@ -1206,6 +1234,46 @@ export class PiWebApp extends LitElement {
     this.refreshLongPressTimer = undefined;
   }
 
+  // ── Panel top/bottom ratio persistence ──
+  private loadPanelTopRatio(): number {
+    try {
+      const raw = localStorage.getItem("pi-web-panel-top-ratio");
+      return raw ? parseFloat(raw) : 0.33;
+    } catch { return 0.33; }
+  }
+  private savePanelTopRatio(ratio: number): void {
+    try { localStorage.setItem("pi-web-panel-top-ratio", String(ratio)); } catch { /* ignore */ }
+  }
+
+  // ── Vertical panel splitter ──
+  private onVSplitterDown(e: MouseEvent): void {
+    e.preventDefault();
+    this.draggingVSplitter = "panel-v";
+    this.vDragStartY = e.clientY;
+    this.vDragStartRatio = this.panelTopRatio;
+    document.addEventListener("mousemove", this.onVSplitterMove);
+    document.addEventListener("mouseup", this.onVSplitterUp);
+  }
+  private handleVSplitterMove(e: MouseEvent): void {
+    if (!this.draggingVSplitter) return;
+    const panel = this.renderRoot.querySelector(".panel-stack") as HTMLElement | null;
+    if (!panel) return;
+    const rect = panel.getBoundingClientRect();
+    const dy = e.clientY - this.vDragStartY;
+    const totalH = rect.height;
+    if (totalH <= 0) return;
+    const newRatio = Math.max(0.1, Math.min(0.7, this.vDragStartRatio + dy / totalH));
+    this.panelTopRatio = newRatio;
+    panel.style.setProperty("--pi-panel-top-ratio", String(newRatio));
+  }
+  private handleVSplitterUp(): void {
+    if (!this.draggingVSplitter) return;
+    this.draggingVSplitter = null;
+    document.removeEventListener("mousemove", this.onVSplitterMove);
+    document.removeEventListener("mouseup", this.onVSplitterUp);
+    this.savePanelTopRatio(this.panelTopRatio);
+  }
+
   // ── Resizable splitter ──
 
   private getStoredWidths(): { nav?: number; panel?: number } {
@@ -1335,7 +1403,7 @@ export class PiWebApp extends LitElement {
           ` : html`<div class="empty">${this.sessionEmptyMessage()}</div>`}
         </main>
         <div class="grid-splitter grid-splitter-panel" @mousedown=${(e: MouseEvent) => this.onSplitterDown(e, "panel")}></div>
-        ${this.renderWorkspacePanel()}
+        ${this.renderPanelStack()}
         ${state.actionPaletteOpen ? html`<action-palette .actions=${this.getActions()} .onRun=${(action: AppAction) => { this.setState({ actionPaletteOpen: false }); this.runAction(action); }} .onCancel=${() => { this.setState({ actionPaletteOpen: false }); }}></action-palette>` : null}
         ${state.projectDialogOpen ? html`<project-dialog .onSubmit=${(path: string, create: boolean) => this.projects.addProject(path, create)} .onCancel=${() => { this.setState({ projectDialogOpen: false }); }}></project-dialog>` : null}
         ${state.themeDialog !== undefined ? html`<command-picker title=${state.themeDialog.title} .options=${state.themeDialog.options} .selectedValue=${state.themeDialog.selectedValue} .onPick=${(value: string) => { this.pickTheme(value); }} .onCancel=${() => { this.setState({ themeDialog: undefined }); }}></command-picker>` : null}
