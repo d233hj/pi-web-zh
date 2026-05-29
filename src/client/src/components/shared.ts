@@ -108,7 +108,7 @@ export const appStyles = css`
   .tab-badge { display: inline-block; min-width: 14px; margin-left: 4px; border: 1px solid var(--pi-success-border); border-radius: 999px; background: var(--pi-success-surface); color: var(--pi-success); padding: 0 5px; font-size: 11px; line-height: 16px; text-align: center; }
   workspace-panel { min-width: 0; min-height: 0; border-left: 1px solid var(--pi-border); overflow: hidden; }
   .panel-stack { display: flex; flex-direction: column; min-width: 0; min-height: 0; border-left: 1px solid var(--pi-border); overflow: hidden; }
-  .panel-stack > .panel-top { flex: 0 0 calc(var(--pi-panel-top-ratio, 0.33) * 100%); min-height: 0; overflow: hidden; }
+  .panel-stack > .panel-top { flex: 0 0 calc(var(--pi-panel-top-ratio, 0.33) * 100%); min-height: 0; overflow: hidden; will-change: flex-basis; }
   .panel-stack > .panel-bottom { flex: 1 1 0%; min-height: 0; overflow: hidden; }
   .panel-v-splitter { flex: 0 0 auto; height: 4px; min-height: 4px; background: var(--pi-border-muted); cursor: row-resize; user-select: none; -webkit-user-select: none; transition: background .15s; position: relative; z-index: 10; }
   .panel-v-splitter::after { content: ""; position: absolute; inset: -4px 0; }

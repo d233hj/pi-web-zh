@@ -1246,32 +1246,35 @@ export class PiWebApp extends LitElement {
   }
 
   // ── Vertical panel splitter ──
+  private _vPanelHeight = 0;
+
   private onVSplitterDown(e: MouseEvent): void {
     e.preventDefault();
     this.draggingVSplitter = "panel-v";
     this.vDragStartY = e.clientY;
     this.vDragStartRatio = this.panelTopRatio;
+    const panel = this.renderRoot.querySelector(".panel-stack") as HTMLElement | null;
+    this._vPanelHeight = panel ? panel.getBoundingClientRect().height : 0;
     document.addEventListener("mousemove", this.onVSplitterMove);
     document.addEventListener("mouseup", this.onVSplitterUp);
   }
   private handleVSplitterMove(e: MouseEvent): void {
-    if (!this.draggingVSplitter) return;
+    if (!this.draggingVSplitter || this._vPanelHeight <= 0) return;
+    const newRatio = Math.max(0.1, Math.min(0.7, this.vDragStartRatio + (e.clientY - this.vDragStartY) / this._vPanelHeight));
     const panel = this.renderRoot.querySelector(".panel-stack") as HTMLElement | null;
-    if (!panel) return;
-    const rect = panel.getBoundingClientRect();
-    const dy = e.clientY - this.vDragStartY;
-    const totalH = rect.height;
-    if (totalH <= 0) return;
-    const newRatio = Math.max(0.1, Math.min(0.7, this.vDragStartRatio + dy / totalH));
-    this.panelTopRatio = newRatio;
-    panel.style.setProperty("--pi-panel-top-ratio", String(newRatio));
+    if (panel) panel.style.setProperty("--pi-panel-top-ratio", String(newRatio));
   }
   private handleVSplitterUp(): void {
     if (!this.draggingVSplitter) return;
     this.draggingVSplitter = null;
+    const panel = this.renderRoot.querySelector(".panel-stack") as HTMLElement | null;
+    if (panel) {
+      const ratio = parseFloat(panel.style.getPropertyValue("--pi-panel-top-ratio")) || this.panelTopRatio;
+      this.panelTopRatio = ratio;
+      this.savePanelTopRatio(ratio);
+    }
     document.removeEventListener("mousemove", this.onVSplitterMove);
     document.removeEventListener("mouseup", this.onVSplitterUp);
-    this.savePanelTopRatio(this.panelTopRatio);
   }
 
   // ── Resizable splitter ──
